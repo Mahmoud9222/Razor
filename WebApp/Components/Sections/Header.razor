@@ -1,0 +1,30 @@
+﻿
+<header>
+    <div class="container">
+        <NavLink id="logo" href="/">
+            <img src="/images/logos/silicon-logo-Light.svg" alt="Silicon" />
+        </NavLink>
+        <nav>
+            <NavLink href="/">Overview</NavLink>
+            <NavLink href="/#features">Features</NavLink>
+            <NavLink href="/contact">Contact</NavLink>
+        </nav>
+
+        <div id="theme-switch" class="btn-switch">
+            <label>Light</label>
+            <label class="switch" for="switch-mode">
+                <input type="checkbox" id="switch-mode" />
+                <span class="slider round"></span>
+            </label>
+            <label>Dark</label>
+        </div>
+
+        <div class="account-buttons">
+            <NavLink href="/account/login" class="btn-theme-secondary btn-small"><i class="fa fa-sign-in-alt"></i> Sign In </NavLink>
+            <NavLink href="/account/register" class="btn-theme btn-small" asp-action="SignUp" asp-controller="Auth"><i class="fa fa-user-plus"></i> Sign Up</NavLink>
+        </div>
+
+        <button class="btn-mobile"><i class="fa-regular fa-bars"></i>
+        </button>
+    </div>
+</header>

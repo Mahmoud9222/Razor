@@ -1,0 +1,140 @@
+﻿@page "/Account/Register"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using WebApp.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Register</PageTitle>
+
+<section class="signup">
+    <div class="container">
+        <partial name="~/Views/Shared/Partials/_StatusMessage.cshtml" />
+        <EditForm Model="registrationForm" asp-route-returnUrl="@ReturnUrl" OnValidSubmit="RegisterUser" novalidate>
+            <DataAnnotationsValidator />
+            <h1>Create Account</h1>
+            <p>Already have an account? <a href="/account/login">Sign in here</a></p>
+
+            <div class="form-content">
+                <div class="input-group">
+                    <label>First Name</label>
+                    <InputText @bind-Value="registrationForm.FirstName" />
+                    <ValidationMessage For="() => registrationForm.FirstName" class="text-danger" />
+                </div>
+
+                <div class="input-group">
+                    <label>Last Name</label>
+                    <InputText @bind-Value="registrationForm.LastName" />
+                    <ValidationMessage For="() => registrationForm.LastName" class="text-danger" />
+                </div>
+
+                <div class="input-group">
+                    <label>Email</label>
+                    <InputText @bind-Value="registrationForm.Email" />
+                    <ValidationMessage For="() => registrationForm.Email" class="text-danger" />
+                </div>
+
+                <div class="input-group">
+                    <label>Password</label>
+                    <InputText @bind-Value="registrationForm.Password" type="password" />
+                    <ValidationMessage For="() => registrationForm.Password" class="text-danger" />
+                </div>
+
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <InputText @bind-Value="registrationForm.ConfirmPassword" type="password" />
+                    <ValidationMessage For="() => registrationForm.ConfirmPassword" class="text-danger" />
+                </div>
+
+                <div class="checkbox-group">
+                    <div class="input-group">
+                        <InputCheckbox @bind-Value="registrationForm.TermsAndConditions" />
+                        <label asp-for="TermsAndConditions">
+                            I accept the <NavLink href="/Terms & Conditions">Terms & Conditions</NavLink>.
+                        </label>
+                    </div>
+                    <ValidationMessage For="() => registrationForm.TermsAndConditions" class="text-danger" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Sign Up</button>
+            </div>
+        </EditForm>
+    </div>
+</section>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterFormModel registrationForm { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private sealed class RegisterFormModel
+    {
+        [Display(Name = "First name")]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 2)]
+        public string FirstName { get; set; } = null!;
+
+        [Display(Name = "Last name")]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 2)]
+        public string LastName { get; set; } = null!;
+
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = "The {0} field is not a valid e-mail address.")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,15}$", ErrorMessage = "The {0} must contain at least one lowercase letter, one uppercase letter, one digit, and one special character, and must be between 8 and 15 characters long.")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the Terms & Conditions.")]
+        public bool TermsAndConditions { get; set; }
+    }
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = new ApplicationUser
+            {
+                FirstName = registrationForm.FirstName,
+                LastName = registrationForm.LastName,
+                UserName = registrationForm.Email,
+                Email = registrationForm.Email,
+            };
+
+        var result = await UserManager.CreateAsync(user, registrationForm.Password);
+
+        if (!result.Succeeded)
+            return;
+
+        var userId = await UserManager.GetUserIdAsync(user);
+
+        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            RedirectManager.RedirectTo("Account/RegisterConfirmation", new() { ["email"] = registrationForm.Email, ["returnUrl"] = ReturnUrl });
+        }
+
+        await SignInManager.SignInAsync(user, isPersistent: false);
+        RedirectManager.RedirectTo(ReturnUrl);
+    }
+}
